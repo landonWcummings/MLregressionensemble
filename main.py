@@ -3,7 +3,10 @@ import pandas as pd
 
 from backend.RFCplace import RFC
 from backend.XGBplace import XGB
-ts = 1
+from backend.LGBplace import LGB
+from backend.LGBmetamodelplace import LGBmeta
+
+ts = 5
 breakup = []
 if ts ==1:
     trainpath = 'C:/Users/lndnc/Downloads/titanic/train.csv'
@@ -35,9 +38,9 @@ if ts == 5:
     predictpath = 'C:/Users/lndnc/Downloads/kagglecardatacomp/test.csv'
     target = 'price'
     savehere = 'C:/Users/lndnc/Downloads/kagglecardatacomp/submissiongeneral.csv'
-    breakup = ["engine", "HP"]
+    breakup = ["engine", "HP", "engine_part_2", "L"]
 
-mod = 1
+mod = 3
 if mod == 1:
     randomforrestclassifier = RFC(trainpath, predictpath, 
                                 target, savehere, num_estimators=[300],
@@ -47,9 +50,19 @@ if mod == 1:
     randomforrestclassifier.complete()
 
 if mod == 2:
-    ExtremeGradientBoostModel = XGB(trainpath, predictpath, 
-                                target, savehere, num_estimators=[10000],
-                                depths=[None], learning_rate=[0.01], split=0.02,
-                                cramers_v_cut=0.17, breakup=breakup,require_individual_correlation=True,
-                                exclude_values_limit=10500, include_nan=True)
+    ExtremeGradientBoostModel = LGB(trainpath, predictpath, 
+                                target, savehere, num_estimators=1000,
+                                depths=[None], learning_rate=[0.01], split=0.001,
+                                cramers_v_cut=0, breakup=breakup,require_individual_correlation=False,
+                                exclude_values_limit=100, include_nan=False,
+                                optuna=True,optuna_depth=20)
+    ExtremeGradientBoostModel.complete()
+
+if mod == 3:
+    ExtremeGradientBoostModel = LGBmeta(trainpath, predictpath, 
+                                target, savehere, num_estimators=100,
+                                depths=[None], learning_rate=[0.01], split=0.001,
+                                cramers_v_cut=0, breakup=breakup,require_individual_correlation=False,
+                                exclude_values_limit=50, include_nan=True,
+                                optuna_depth=4,num_models=4)
     ExtremeGradientBoostModel.complete()

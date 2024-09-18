@@ -7,12 +7,10 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import StandardScaler
 import pandas.api.types as ptypes
 from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import LabelEncoder
 import xgboost as xgb
 from xgboost import XGBClassifier
 from xgboost import XGBRegressor
-
-
-
 from .pipe import pipe
 
 score = -1
@@ -128,14 +126,27 @@ class XGB:
         #no scale for XGBoost
         X_train = train.drop([self.target], axis=1)
         y_train = train[self.target]
+
+        for column in X_train.columns:
+            if X_train[column].dtype == 'object':
+                X_train[column] = LabelEncoder().fit_transform(X_train[column].astype(str))
+
         
         X_data = X_train.to_numpy()
         y_data = y_train.to_numpy()
-        
-        parameters={'n_estimators': self.num_estimators, 'max_depth': self.depths,
-            'learning_rate': self.learning_rate, 'subsample': 0.9947997083813288,
-            'colsample_bytree': 0.5336230391923533,
-            'gamma': 0.16126940334635828}
+
+        parameters = {
+    'booster': 'gbtree', 
+    'n_estimators': self.num_estimators,
+    'max_depth': self.depths,
+    'learning_rate': self.learning_rate, 
+    'subsample': 0.9947997083813288,
+    'colsample_bytree': 0.5336230391923533,
+    'gamma': 0.16126940334635828,
+    'tree_method': 'hist',  # Use 'hist' with the 'device' parameter
+    'device': 'cuda'        # Specify the device as 'cuda' for GPU
+}
+
 
         if binary:
             howtoscore = "accuracy"
@@ -153,7 +164,7 @@ class XGB:
 
         # Create the GridSearchCV object
         
-        grid_search = GridSearchCV(xgb_model, param_grid, cv=3, scoring=howtoscore, return_train_score=True)
+        grid_search = GridSearchCV(xgb_model, param_grid, cv=3, scoring=howtoscore, return_train_score=True, n_jobs=-1)
 
         # Fit the model using grid search
         print("grid searching - this takes a while depending on your number of columns and train size")
@@ -200,6 +211,12 @@ class XGB:
         X_test = test.drop([self.target], axis=1)
         y_test = test[self.target]
 
+        for column in X_test.columns:
+            if X_test[column].dtype == 'object':
+                encoder = LabelEncoder()
+                X_test[column] = encoder.fit_transform(X_test[column].astype(str))
+
+        
         X_test_data = X_test.to_numpy()
         y_test_data = y_test.to_numpy()
 
@@ -214,6 +231,11 @@ class XGB:
         print(score)
     def finish(self, model, predict, id, savepath, savenames):
         global dtype
+
+        for column in predict.columns:
+            if predict[column].dtype == 'object':
+                encoder = LabelEncoder()
+                predict[column] = encoder.fit_transform(predict[column].astype(str))
         final_predict = predict.to_numpy()
 
         predictions = model.predict(final_predict)

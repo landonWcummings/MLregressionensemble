@@ -178,12 +178,14 @@ class pipe:
                 return self
 
             def transform(self, X):
-                global savenames
+                global savenames    
+                """
                 categorical_columns = X.select_dtypes(include=['object']).columns
                 all_encoded_dfs = []
 
                 for i, column in enumerate(categorical_columns):
                     if column != self.target:
+                        
                         column_names = X[column].unique()
                         column_names = [f"{name}_{i+1}" if name != 'Missing' else name for name in column_names]
 
@@ -197,33 +199,36 @@ class pipe:
                             pass
 
                         all_encoded_dfs.append(encoded_df)
+                        
                     else:
                         # target column
-                        unique_values = X[self.target].unique()
+                        """
+                if self.target in X.columns:
+                    unique_values = X[self.target].unique()
 
-                        if len(unique_values) == 2:
-                            value1, value2 = unique_values[0], unique_values[1]
-                            X[self.target] = X[self.target].map({value1: 0, value2: 1})
-                            savenames[0] = True
-                            savenames[1] = value1
-                            savenames[2] = value2
-                        else:
-                            savenames[0] = False
+                    if len(unique_values) == 2:
+                        value1, value2 = unique_values[0], unique_values[1]
+                        X[self.target] = X[self.target].map({value1: 0, value2: 1})
+                        savenames[0] = True
+                        savenames[1] = value1
+                        savenames[2] = value2
+                    else:
+                        savenames[0] = False
 
                         
-                        all_encoded_dfs.append(X[[self.target]])
-                        i -= 1
-
+                        #all_encoded_dfs.append(X[[self.target]])
+                        #i -= 1
+                """
                 # Drop original categorical columns except 'class'
                 X_dropped = X.drop(categorical_columns.difference([self.target]), axis=1)
 
                 # Concatenate all encoded dataframes with the rest of X
                 final_df = pd.concat([X_dropped] + all_encoded_dfs, axis=1)
-
+                """
                 
 
                 print("encoded")
-                return final_df
+                return X
             
         class FeatureDropper(BaseEstimator, TransformerMixin):
             def __init__(self, params):
@@ -232,7 +237,8 @@ class pipe:
                 return self
             def transform(self, X):
                 X = X.drop(['Missing'], axis=1, errors='ignore')
-                return X.drop(originals, axis=1, errors='ignore')
+                #return X.drop(originals, axis=1, errors='ignore')
+                return X
         
 
         passpipeline = [self.target, self.exclude_values_limit, self.cramers_v_cut, self.istrain, self.impute_method, self.require_individual_correlation, self.include_nan, self.breakup]
